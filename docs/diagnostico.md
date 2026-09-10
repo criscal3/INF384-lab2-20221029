@@ -29,6 +29,13 @@ La métrica DORA que se espera mover es la tasa de fallos en cambios (Change Fai
 
 El número concreto a medir es el porcentaje de despliegues a producción que fallan o requieren rollback/hotfix. Tras la intervención, se debe recalcular este mismo indicador (despliegues fallidos ÷ total de despliegues en un período determinado) y compararlo contra resultados previos. Una reducción sostenida de ese porcentaje es la evidencia concreta de que la Change Failure Rate efectivamente se movió.
 
+2.
+
+Desde el tag v1.2.0 se identifican tres tipos de cambio: dos feat sobre el código de negocio (0b981ca, b7e44ce) y cambios de tipo ci/chore sobre .github/workflows/pipeline.yml. 
+Según SemVer, la versión del paquete se determina únicamente por cambios que afectan su comportamiento o API pública. Los cambios de CI no inciden en esa versión. Por lo tanto, el bump correspondiente es minor: 1.2.0 → 1.3.0.
+
+
+
 # Declaración de uso de IA generativa
 
 Prompt utilizados: 
