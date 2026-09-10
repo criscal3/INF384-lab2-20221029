@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 jobs:
-
+ 
   validar:
     name: Validar
     runs-on: ubuntu-latest
@@ -14,53 +14,65 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+ 
       - name: Preparar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+ 
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
+          pip install -r requirements.txt --require-hashes
+ 
       - name: Ejecutar pruebas
         run: pytest --cov=src --cov-report=xml
-
+ 
       - name: Analisis de calidad
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-        with:
-          args: >
-            -Dsonar.organization=${{ vars.SONAR_ORG }}
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
-
+ 
+      - name: Verificar Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+ 
   publicar:
     name: Publicar artefacto
+    needs: validar
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Descargar el codigo
         uses: actions/checkout@v4
-
+ 
       - name: Preparar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+ 
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
+          pip install -r requirements.txt --require-hashes
+ 
+      - name: Leer version
+        id: version
+        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+ 
       - name: Construir el paquete
         run: python -m build
-
+ 
       - name: Publicar el paquete
         uses: actions/upload-artifact@v4
         with:
-          name: paquete
+          name: despachos-${{ steps.version.outputs.version }}
           path: dist/
           overwrite: true
