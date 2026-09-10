@@ -139,5 +139,83 @@ Qué número concreto se va a medir para sustentar que la métrica se movió. Re
 Ahora, se deben corregir los cuatro defectos en .github/workflows/pipeline.yml. Genera el nuevo contenido del archivo. El pipeline resultante debe cumplir: # Condición 1 Las dependencias se instalan desde el archivo de bloqueo, no resolviendo versiones 2 Las dependencias se cachean entre ejecuciones 3 El pipeline se detiene si el análisis de calidad no cumple el quality gate 4 El artifact publicado debe llamarse despachos-, solo desde main, y solo si la validación pasó Sobre el punto 4. La versión no se inventa: se deriva del historial de commits desde el tag v1.2.0. Revisen qué tipo de cambios hay desde ese tag y determinen si corresponde mayor, menor o parche. Actualicen VERSION y pyproject.toml con el valor que corresponda, y justifíquenlo en el entregable. Sobre el quality gate. Configuren sonar-project.properties con su organization key y su project key antes de la primera ejecución. Verificación. Ejecuten el pipeline y confirmen que pasa en verde y que el artefacto publicado lleva la versión en el nombre.
 
 
+7.
 
+Ahora, se debe agregar a un archivo existente en src/despachos/ una función nueva de al menos 15 líneas, con lógica real —condicionales, no un return fijo— y sin ninguna prueba que la cubra. 
+pedidos.py:
+"""Modelo de pedido y transiciones de estado."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+
+class Estado(str, Enum):
+    REGISTRADO = "registrado"
+    PREPARADO = "preparado"
+    DESPACHADO = "despachado"
+    ENTREGADO = "entregado"
+    ANULADO = "anulado"
+
+TRANSICIONES = {
+    Estado.REGISTRADO: {Estado.PREPARADO, Estado.ANULADO},
+    Estado.PREPARADO: {Estado.DESPACHADO, Estado.ANULADO},
+    Estado.DESPACHADO: {Estado.ENTREGADO},
+    Estado.ENTREGADO: set(),
+    Estado.ANULADO: set(),
+}
+
+class TransicionInvalida(Exception):
+    """Se intento una transicion de estado no permitida."""
+
+@dataclass
+class Linea:
+    sku: str
+    cantidad: int
+    precio_unitario: float
+
+    def subtotal(self) -> float:
+        return round(self.cantidad * self.precio_unitario, 2)
+
+@dataclass
+class Pedido:
+    codigo: str
+    cliente: str
+    lineas: list[Linea] = field(default_factory=list)
+    estado: Estado = Estado.REGISTRADO
+    creado_en: datetime = field(default_factory=datetime.now)
+
+    def agregar_linea(self, linea: Linea) -> None:
+        if self.estado is not Estado.REGISTRADO:
+            raise TransicionInvalida(
+                "solo se pueden agregar lineas a un pedido registrado"
+            )
+        self.lineas.append(linea)
+
+    def total(self) -> float:
+        return round(sum(linea.subtotal() for linea in self.lineas), 2)
+
+    def unidades(self) -> int:
+        return sum(linea.cantidad for linea in self.lineas)
+
+    def cambiar_estado(self, nuevo: Estado) -> None:
+        permitidos = TRANSICIONES[self.estado]
+        if nuevo not in permitidos:
+            raise TransicionInvalida(
+                f"no se puede pasar de {self.estado.value} a {nuevo.value}"
+            )
+        self.estado = nuevo
+
+    def esta_cerrado(self) -> bool:
+        return self.estado in (Estado.ENTREGADO, Estado.ANULADO)
+
+def agrupar_por_cliente(pedidos: list[Pedido]) -> dict[str, list[Pedido]]:
+    agrupados: dict[str, list[Pedido]] = {}
+    for pedido in pedidos:
+        agrupados.setdefault(pedido.cliente, []).append(pedido)
+    return agrupados
+
+def pedidos_abiertos(pedidos: list[Pedido]) -> list[Pedido]:
+    return [p for p in pedidos if not p.esta_cerrado()]
 
