@@ -134,6 +134,10 @@ Qué métrica DORA se espera mover con la intervención (el pipeline corregido) 
 
 Qué número concreto se va a medir para sustentar que la métrica se movió. Respuesta breve en párrafo
 
+6.
+
+Ahora, se deben corregir los cuatro defectos en .github/workflows/pipeline.yml. Genera el nuevo contenido del archivo. El pipeline resultante debe cumplir: # Condición 1 Las dependencias se instalan desde el archivo de bloqueo, no resolviendo versiones 2 Las dependencias se cachean entre ejecuciones 3 El pipeline se detiene si el análisis de calidad no cumple el quality gate 4 El artifact publicado debe llamarse despachos-, solo desde main, y solo si la validación pasó Sobre el punto 4. La versión no se inventa: se deriva del historial de commits desde el tag v1.2.0. Revisen qué tipo de cambios hay desde ese tag y determinen si corresponde mayor, menor o parche. Actualicen VERSION y pyproject.toml con el valor que corresponda, y justifíquenlo en el entregable. Sobre el quality gate. Configuren sonar-project.properties con su organization key y su project key antes de la primera ejecución. Verificación. Ejecuten el pipeline y confirmen que pasa en verde y que el artefacto publicado lleva la versión en el nombre.
+
 
 
 
