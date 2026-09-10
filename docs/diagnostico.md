@@ -1,3 +1,4 @@
+# Diagnóstico
 1.1. 
 Los cuatros defectos son:
 a) Falta incluir un needs: validar en el job Publicar (luego de la línea 41 del archivo .github/workflows/pipeline.yml). 
